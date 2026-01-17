@@ -1,4 +1,7 @@
-import os
+import tempfile, os
+FIG_DIR = os.path.join(tempfile.gettempdir(), 'figures')
+os.makedirs(FIG_DIR, exist_ok=True)
+print('figures saved to', FIG_DIR)
 import datetime
 import numpy as np
 import pandas as pd
@@ -8,13 +11,13 @@ import matplotlib.pyplot as plt
 
 ########### Data Constants ###########
 DATA_DIR = '../data/'
-if not os.access('/tmp/figures', os.F_OK):
-    os.mkdir('/tmp/figures')
-if not os.access('/tmp/figures', os.W_OK):
-    print('Cannot write to /tmp/figures, please fix it.')
+if not os.access(FIG_DIR, os.F_OK):
+    os.mkdir(FIG_DIR)
+if not os.access(FIG_DIR, os.W_OK):
+    print('Cannot write to FIG_DIR, please fix it.')
     exit()
 else:
-    print('figures saved to /tmp/figures')
+    print('figures saved to FIG_DIR')
 
 ########### Prepare Functions ###########
 def get_df(file, header=None):
@@ -208,6 +211,7 @@ def add_hour_date(df):
 def get_hourly_task_request(df): # df = dftjkix
     sum_df_list = []
     df = add_hour_date(df.copy())
+    df = df[df['date'].notna()]
     # for day in sorted(df.dayofyear.unique()):
     for date in sorted(df.date.unique()):
         # tempdf = df[df.dayofyear==day]

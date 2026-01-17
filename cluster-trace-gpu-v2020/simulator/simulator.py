@@ -22,7 +22,7 @@ class Simulator:
     def __init__(self, csv_file, alloc_policy=0, preempt_policy=0,
                  sort_node_policy=0, oracle=False, random_seed=42,
                  max_time=int(1e10), num_gpus=None, num_cpus=None, num_nodes=4,
-                 pattern=1, delta=1, num_spare_node=1,
+                 pattern=1, delta=10, num_spare_node=1, #delta改为10
                  hetero=False, describe_file=None, export_job_stats=False,
                  export_cluster_util=False, log_file=None, arrival_rate=None,
                  arrival_interval=60, arrival_shuffle=False,
