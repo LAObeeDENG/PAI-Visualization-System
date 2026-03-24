@@ -8,7 +8,7 @@ class LLMAnalyser:
         self.db_path = db_path
         # 初始化通义千问客户端（兼容 OpenAI 格式）
         self.client = OpenAI(
-            api_key="api接口（需要替换）",
+            api_key="",
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
 

@@ -119,7 +119,7 @@ def create_dashboard_views():
     GROUP BY name
     """
     pd.read_sql(sql_wait, engine).to_sql('v_wait_buckets', con=engine, if_exists='replace', index=False)
-    # === 追加：物理卡数 & 申请总量 ===
+    # === 物理卡数 & 申请总量 ===
     # 1. 集群真实卡数
     sql_real = "SELECT SUM(cap_gpu) AS total_gpu FROM machine_spec"
     pd.read_sql(sql_real, engine).to_sql('v_real_gpu', con=engine, if_exists='replace', index=False)
@@ -128,9 +128,61 @@ def create_dashboard_views():
     sql_req = "SELECT SUM(plan_gpu) AS total_gpu_req FROM tasks"
     pd.read_sql(sql_req, engine).to_sql('v_req_gpu', con=engine, if_exists='replace', index=False)
 
+    # ===== 按周内小时统计 task 提交数 =====
+    sql_hourly = """
+    SELECT 
+        hour_of_week,
+        ROUND(task_count * 1.0 / num_weeks) AS task_count
+    FROM (
+        SELECT 
+            (CAST(strftime('%w', datetime(job_arrive, 'unixepoch', '+8 hours')) AS INTEGER) * 24 +
+             CAST(strftime('%H', datetime(job_arrive, 'unixepoch', '+8 hours')) AS INTEGER)) AS hour_of_week,
+            COUNT(DISTINCT job_name) AS task_count
+        FROM analysis_wide_table
+        WHERE job_arrive IS NOT NULL
+        GROUP BY hour_of_week
+    ) t
+    CROSS JOIN (
+        SELECT COUNT(DISTINCT 
+            strftime('%Y-%W', datetime(job_arrive, 'unixepoch', '+8 hours'))
+        ) AS num_weeks
+        FROM analysis_wide_table
+        WHERE job_arrive IS NOT NULL
+    ) w
+    ORDER BY hour_of_week
+    """
+    pd.read_sql(sql_hourly, engine).to_sql(
+        'v_hourly_tasks', con=engine, if_exists='replace', index=False
+    )
+    print("v_hourly_tasks 视图已生成")
+
+    # ===== 新增：实例运行时长（用于CDF）=====
+    sql_runtime = """
+        SELECT (inst_end - inst_start) AS runtime
+        FROM analysis_wide_table
+        WHERE inst_end IS NOT NULL
+          AND inst_start IS NOT NULL
+          AND (inst_end - inst_start) > 0
+        """
+    pd.read_sql(sql_runtime, engine).to_sql(
+        'v_instance_runtime', con=engine, if_exists='replace', index=False
+    )
+
+    # ===== 新增：GPU申请量 vs 实际使用量（用于CDF）=====
+    sql_gpu = """
+        SELECT plan_gpu, avg_gpu_util
+        FROM analysis_wide_table
+        WHERE plan_gpu IS NOT NULL
+          AND avg_gpu_util IS NOT NULL
+          AND plan_gpu > 0
+        """
+    pd.read_sql(sql_gpu, engine).to_sql(
+        'v_gpu_cdf_data', con=engine, if_exists='replace', index=False
+    )
+    print("CDF 相关视图已生成")
 if __name__ == "__main__":
     # create_wide_table()
-    calculate_resource_util()
+    #calculate_resource_util()
     create_dashboard_views()
     # 运行这个看看前 5 行，确认指标是否看起来正常
 print(pd.read_sql("SELECT job_name, wait_time, gpu_over_provisioning FROM analysis_wide_table LIMIT 5", engine))
