@@ -1,142 +1,224 @@
-# backend/llm_analyser.py
 import sqlite3
 import pandas as pd
+import json
 from openai import OpenAI
+
+# ===== 静态算法与集群知识库，每次请求都注入 =====
+ALGO_KNOWLEDGE = """
+【调度算法说明】
+SJF (Shortest Job First - Oracle版本)：最短作业优先，使用任务真实运行时长排序，代表理论最优上界。实际生产中无法直接使用，因为事先无法知道任务真实时长，仅作为优化目标的参照基准。
+SJU：SJF的实用版本，用用户(User)历史执行记录预测任务时长，适合用户行为稳定的场景。
+SJG：在SJU基础上增加Group标签特征。Group通过哈希任务的入口脚本、命令行参数、数据源等元信息生成，能识别"重复任务"。PAI集群中65%的任务会重复执行5次以上，Group特征可显著提升预测精度。
+SJGG：在SJG基础上再增加GPU型号(GPU type)特征，是预测精度最高的实用版本，综合考虑了用户习惯、任务重复性和硬件异构性。
+FIFO (First In First Out)：先进先出，按提交时间排队，是最简单的基准策略。存在队头阻塞问题，短任务容易被长任务卡住，约9%的短任务等待时间超过其运行时间的50%。
+
+【评估指标说明】
+JCT (Job Completion Time)：作业周转时间，从提交到完成的总耗时，越低越好。
+Wait Time：排队等待时间，衡量调度效率的核心指标，是JCT中可优化的部分。
+Makespan：所有作业全部完成的总时长，衡量集群整体吞吐量。
+
+【集群背景知识】
+本系统分析的是阿里巴巴PAI(Platform for AI)平台的GPU集群，共6500+块GPU，分布在约1800台机器上。集群包含T4、P100、V100、V100M32、MISC等多种GPU型号，属于异构集群。集群同时运行训练和推理任务，支持GPU共享（多任务共享同一块GPU时间片），大多数任务只使用GPU的一小部分，中位数GPU利用率仅约4.2%，存在严重的资源超配现象。
+"""
+
 
 class LLMAnalyser:
     def __init__(self, db_path, api_key):
         self.db_path = db_path
-        # 初始化通义千问客户端（兼容 OpenAI 格式）
         self.client = OpenAI(
-            api_key="",
+            api_key=api_key,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
 
-    def get_ai_intelligence_context(self, last_sim_results=None):
-        """数据聚合：将数据库指标和仿真结果转化为情报简报"""
+    def _get_cluster_snapshot_text(self):
+        """拼装文本格式的集群快照，用于注入系统 prompt"""
         conn = sqlite3.connect(self.db_path)
         try:
-            # 1. 聚合核心 KPI
-            kpi_query = """
-                SELECT 
+            # KPI
+            kpi = pd.read_sql("""
+                SELECT
+                    (SELECT total_gpu FROM v_real_gpu) as total_gpu,
+                    (SELECT COUNT(DISTINCT job_name) FROM analysis_wide_table WHERE status = 'Running') as active_jobs,
                     AVG(wait_time) / 60.0 as avg_wait_min,
                     AVG(gpu_over_provisioning) * 100 as avg_overprov
                 FROM analysis_wide_table
-            """
-            kpi_df = pd.read_sql(kpi_query, conn)
-            avg_wait = kpi_df.iloc[0]['avg_wait_min'] or 0
-            avg_over = kpi_df.iloc[0]['avg_overprov'] or 0
+            """, conn).iloc[0]
 
-            # 2. 提取异常作业线索 (Straggler 逻辑)
-            straggler_query = """
-                SELECT job_name, 
-                       (MAX(inst_end - inst_start) - MIN(inst_end - inst_start)) / 
-                       NULLIF(AVG(inst_end - inst_start), 0.001) as cov
-                FROM analysis_wide_table
-                GROUP BY job_name
-                HAVING cov > 0.5
-                ORDER BY cov DESC LIMIT 2
-            """
-            stragglers = pd.read_sql(straggler_query, conn).to_dict(orient='records')
-            strag_text = ", ".join([f"{s['job_name']}(CoV:{s['cov']:.2f})" for s in stragglers]) if stragglers else "无明显异常"
+            # GPU 利用率分布
+            gpu_dist = pd.read_sql(
+                "SELECT bucket as name, count as value FROM v_gpu_dist ORDER BY bucket", conn
+            )
+            total_count = gpu_dist['value'].sum()
+            gpu_dist_text = '、'.join([
+                f"{row['name']} 占 {round(row['value'] / total_count * 100, 1)}%"
+                for _, row in gpu_dist.iterrows()
+            ]) if total_count > 0 else "暂无数据"
 
-            # 3. 提取仿真结论
-            sim_summary = "暂无仿真对比数据"
-            if last_sim_results:
-                best = min(last_sim_results, key=lambda x: x['wait'])
-                worst = max(last_sim_results, key=lambda x: x['wait'])
-                improvement = ((worst['wait'] - best['wait']) / (worst['wait'] + 0.1)) * 100
-                sim_summary = f"仿真显示 {best['algo']} 表现最优，相较于 FIFO 降低排队延迟 {improvement:.1f}%"
+            # GPU 型号分布
+            gpu_models = pd.read_sql("SELECT name, value FROM v_gpu_models", conn)
+            total_model = gpu_models['value'].sum()
+            gpu_model_text = '、'.join([
+                f"{row['name']} 占 {round(row['value'] / total_model * 100, 1)}%"
+                for _, row in gpu_models.iterrows()
+            ]) if total_model > 0 else "暂无数据"
 
-            return (f"### 集群运行情报 ###\n"
-                    f"- 负载状态：平均排队 {avg_wait:.1f}min，GPU 超配率 {avg_over:.1f}%\n"
-                    f"- 异常线索：{strag_text}\n"
-                    f"- 仿真结论：{sim_summary}\n")
+            # 等待时长分布
+            wait_dist = pd.read_sql("SELECT name, value FROM v_wait_buckets", conn)
+            total_wait = wait_dist['value'].sum()
+            wait_text = '、'.join([
+                f"{row['name']} 占 {round(row['value'] / total_wait * 100, 1)}%"
+                for _, row in wait_dist.iterrows()
+            ]) if total_wait > 0 else "暂无数据"
+
+            # 最近仿真结果
+            sim_row = pd.read_sql(
+                "SELECT * FROM simulation_history ORDER BY id DESC LIMIT 1", conn
+            )
+            sim_text = "暂无仿真数据"
+            if not sim_row.empty:
+                r = sim_row.iloc[0]
+                sim_results = json.loads(r['results'])
+                algo_lines = '\n'.join([
+                    f"  - {s['algo']}: JCT={s['jct']:.0f}s, 等待={s['wait']:.0f}s, Makespan={s.get('makespan', 0):.0f}s"
+                    for s in sim_results
+                ])
+                # 计算相对 FIFO 的改善幅度
+                fifo = next((s for s in sim_results if s['algo'] == 'FIFO'), None)
+                improve_text = ""
+                if fifo:
+                    best = min([s for s in sim_results if s['algo'] != 'FIFO'], key=lambda x: x['wait'], default=None)
+                    if best:
+                        improve_pct = (fifo['wait'] - best['wait']) / fifo['wait'] * 100
+                        improve_text = f"\n  最优算法 {best['algo']} 相比 FIFO 排队等待改善 {improve_pct:.1f}%"
+                sim_text = (
+                    f"仿真时间: {r['created_at']}，作业数: {r['num_jobs']}，"
+                    f"到达率: {r['arrival_rate']} jobs/min，GPU总数: {r['num_gpus']}\n"
+                    f"{algo_lines}{improve_text}"
+                )
+
+            return (
+                f"【当前集群状态】\n"
+                f"- 总GPU数: {int(kpi['total_gpu'] or 0)} 块\n"
+                f"- 历史活跃作业数: {int(kpi['active_jobs'] or 0)} 个\n"
+                f"- 平均排队等待: {round(float(kpi['avg_wait_min'] or 0), 1)} 分钟\n"
+                f"- 平均GPU超配率: {round(float(kpi['avg_overprov'] or 0), 1)}%\n"
+                f"- GPU利用率分布: {gpu_dist_text}\n"
+                f"- GPU型号分布: {gpu_model_text}\n"
+                f"- 任务等待时长分布: {wait_text}\n\n"
+                f"【最近一次仿真结果】\n{sim_text}"
+            )
+        except Exception as e:
+            return f"集群数据获取失败: {str(e)}"
         finally:
             conn.close()
 
-    def ask_qwen_expert(self, context):
-        """发送给通义千问进行专家分析"""
+    def get_cluster_snapshot_for_ui(self):
+        """返回结构化数据，供前端左侧面板展示"""
+        conn = sqlite3.connect(self.db_path)
         try:
-            completion = self.client.chat.completions.create(
-                model="qwen-plus", # 建议使用 qwen-plus 或 qwen-max
-                messages=[
-                    {"role": "system", "content": "你是一位高性能计算和智算集群调度专家。请根据提供的集群情报给出简明扼要的诊断建议。"},
-                    {"role": "user", "content": f"以下是当前集群的运行数据，请进行简要分析并给出优化方向：\n{context}"
-                                                f"要求：不使用markdown语法，简要分段或分点，400字以内"}
-                ],
-                temperature=0.7,
-                max_tokens=800
+            kpi = pd.read_sql("""
+                SELECT
+                    (SELECT total_gpu FROM v_real_gpu) as total_gpu,
+                    (SELECT COUNT(DISTINCT job_name) FROM analysis_wide_table WHERE status = 'Running') as active_jobs,
+                    AVG(wait_time) / 60.0 as avg_wait_min,
+                    AVG(gpu_over_provisioning) * 100 as avg_overprov
+                FROM analysis_wide_table
+            """, conn).iloc[0]
+
+            # GPU 利用率分布（用于计算低利用率占比）
+            gpu_dist = pd.read_sql(
+                "SELECT bucket as name, count as value FROM v_gpu_dist ORDER BY bucket", conn
             )
-            print('[QWEN_REQ]', context)
-            raw = completion.choices[0].message.content
-            print('[QWEN_RAW]', raw)
-            # ============================
-            return raw
+            total_count = gpu_dist['value'].sum()
+            gpu_dist_list = [
+                {"name": row['name'], "pct": round(row['value'] / total_count * 100, 1)}
+                for _, row in gpu_dist.iterrows()
+            ] if total_count > 0 else []
+            # 0-20% 低利用率占比
+            low_util_pct = gpu_dist_list[0]['pct'] if gpu_dist_list else 0
+
+            # 长等待任务占比（>1小时）
+            wait_dist = pd.read_sql("SELECT name, value FROM v_wait_buckets", conn)
+            total_wait = wait_dist['value'].sum()
+            long_wait_row = wait_dist[wait_dist['name'].str.contains('hour|1 h', case=False, na=False)]
+            long_wait_pct = round(
+                long_wait_row['value'].sum() / total_wait * 100, 1
+            ) if total_wait > 0 else 0
+
+            # 最近仿真结果
+            sim_row = pd.read_sql(
+                "SELECT * FROM simulation_history ORDER BY id DESC LIMIT 1", conn
+            )
+            sim_summary = None
+            if not sim_row.empty:
+                r = sim_row.iloc[0]
+                sim_results = json.loads(r['results'])
+                fifo = next((s for s in sim_results if s['algo'] == 'FIFO'), None)
+                best = None
+                improve_pct = None
+                if fifo:
+                    others = [s for s in sim_results if s['algo'] != 'FIFO']
+                    if others:
+                        best = min(others, key=lambda x: x['wait'])
+                        improve_pct = round((fifo['wait'] - best['wait']) / fifo['wait'] * 100, 1)
+                sim_summary = {
+                    "created_at": r['created_at'],
+                    "num_jobs": int(r['num_jobs']),
+                    "arrival_rate": int(r['arrival_rate']),
+                    "num_gpus": int(r['num_gpus']),
+                    "mode": r['mode'],
+                    "results": sim_results,
+                    "best_algo": best['algo'] if best else None,
+                    "improve_pct": improve_pct
+                }
+
+            return {
+                "kpi": {
+                    "total_gpu": int(kpi['total_gpu'] or 0),
+                    "active_jobs": int(kpi['active_jobs'] or 0),
+                    "avg_wait_min": round(float(kpi['avg_wait_min'] or 0), 1),
+                    "avg_overprov": round(float(kpi['avg_overprov'] or 0), 1),
+                    "low_util_pct": low_util_pct,
+                    "long_wait_pct": long_wait_pct,
+                },
+                "sim_summary": sim_summary
+            }
         except Exception as e:
-            return f"AI 诊断调用失败: {str(e)}"
+            return {"error": str(e)}
+        finally:
+            conn.close()
 
-
-import sqlite3
-import pandas as pd
-
-
-def get_ai_intelligence_context(db_path, last_sim_results=None):
-    """
-    数据聚合函数：将多维监控指标转化为 AI 可读的结构化上下文
-    :param db_path: SQLite 数据库路径
-    :param last_sim_results: 内存中存储的最近一次仿真结果列表
-    :return: 结构化字符串 (Context)
-    """
-    conn = sqlite3.connect(db_path)
-
-    try:
-        # 1. 聚合核心 KPI (反映集群当前总体压力)
-        # 从分析宽表中提取平均排队时长和 GPU 平均超配率
-        kpi_query = """
-            SELECT 
-                AVG(wait_time) / 60.0 as avg_wait_min,
-                AVG(gpu_over_provisioning) * 100 as avg_overprov
-            FROM analysis_wide_table
+    def chat(self, messages: list):
         """
-        kpi_df = pd.read_sql(kpi_query, conn)
-        avg_wait = kpi_df.iloc[0]['avg_wait_min'] or 0
-        avg_over = kpi_df.iloc[0]['avg_overprov'] or 0
-
-        # 2. 提取异常作业线索 (Straggler 粗筛)
-        # 寻找运行时间波动最大（离散系数 CoV 较高）的前 2 个作业
-        straggler_query = """
-            SELECT job_name, 
-                   (MAX(inst_end - inst_start) - MIN(inst_end - inst_start)) / 
-                   NULLIF(AVG(inst_end - inst_start), 0) as cov
-            FROM analysis_wide_table
-            GROUP BY job_name
-            HAVING cov > 0.5
-            ORDER BY cov DESC
-            LIMIT 2
+        多轮对话接口
+        messages: [{"role": "user"/"assistant", "content": "..."}]
+        返回 AI 的回复文本
         """
-        stragglers = pd.read_sql(straggler_query, conn).to_dict(orient='records')
-        strag_text = ", ".join([f"{s['job_name']}(CoV:{s['cov']:.2f})" for s in stragglers]) if stragglers else "无明显异常"
+        try:
+            snapshot = self._get_cluster_snapshot_text()
+            system_prompt = (
+                "你是一位高性能计算和GPU集群调度领域的专家，正在帮助用户分析阿里巴巴PAI平台的GPU集群运行状况。"
+                "请基于提供的集群数据给出专业、简明、有针对性的分析和建议。"
+                "回答时不要使用markdown语法，用简洁的分段或分点表达，400字以内。\n\n"
+                + ALGO_KNOWLEDGE + "\n\n"
+                + snapshot + "\n\n"
+                "请基于以上数据回答用户的问题。如果用户问的问题超出上述数据范围，请明确说明当前数据不足以回答，并建议用户运行仿真或查看具体指标。"
 
-        # 3. 提取仿真结论 (算法对比)
-        sim_summary = "暂无仿真对比数据"
-        if last_sim_results and len(last_sim_results) > 0:
-            # 找到等待时间最短(Optimal)和最长(FIFO)的算法
-            best = min(last_sim_results, key=lambda x: x['wait'])
-            worst = max(last_sim_results, key=lambda x: x['wait'])
-            improvement = ((worst['wait'] - best['wait']) / worst['wait']) * 100
-            sim_summary = f"仿真显示 {best['algo']} 表现最优，相较于 FIFO 降低延迟 {improvement:.1f}%"
+            )
+            full_messages = [{"role": "system", "content": system_prompt}] + messages
+            completion = self.client.chat.completions.create(
+                model="qwen3.5-27b",
+                messages=full_messages,
+                temperature=0.7,
+                max_tokens=1000
+            )
+            return completion.choices[0].message.content
+        except Exception as e:
+            return f"AI 调用失败: {str(e)}"
 
-        # 4. 组装情报快照
-        context = (
-            f"### 集群运行情报 ###\n"
-            f"- 负载状态：平均排队 {avg_wait:.1f}min，GPU 超配率 {avg_over:.1f}%\n"
-            f"- 异常线索：{strag_text}\n"
-            f"- 仿真结论：{sim_summary}\n"
-        )
-        return context
+    # 保留旧接口兼容性（server.py 其他地方可能调用）
+    def get_ai_intelligence_context(self, last_sim_results=None):
+        return self._get_cluster_snapshot_text()
 
-    except Exception as e:
-        return f"数据聚合失败: {str(e)}"
-    finally:
-        conn.close()
+    def ask_qwen_expert(self, context):
+        return self.chat([{"role": "user", "content": "请对以上集群状态进行综合分析。"}])

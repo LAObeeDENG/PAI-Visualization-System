@@ -233,18 +233,20 @@ def run_simulation(req: SimRequest):
             # ===== 写入历史记录（在仿真成功、results 已赋值之后）=====
             try:
                 algo_names = ','.join(r['algo'] for r in results)
-                # 生成自动名称：例如 "[对比] SJF, FIFO (14:30)"
+                # 1. 获取当前完整时间：2026-03-25 17:10:11
+                full_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                # 2. 判断模式标签
                 mode_label = "单项" if len(req.algorithms) == 1 else "对比"
-                time_label = datetime.now().strftime('%H:%M')
-                auto_name = f"[{mode_label}] {algo_names} ({time_label})"
+                # 3. 构造格式：[对比] 2026-03-25 17:10:11
+                auto_name = f"[{mode_label}] {full_time_str}"
 
                 conn_hist = sqlite3.connect(DB_PATH)
                 conn_hist.execute("""
-                    INSERT INTO simulation_history
-                        (created_at, num_jobs, arrival_rate, num_gpus, mode, algorithms, results)
+                    INSERT INTO simulation_history 
+                    (created_at, num_jobs, arrival_rate, num_gpus, mode, algorithms, results)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    auto_name,  # 直接将生成的名称存入原本的 created_at 字段，或者你可以新建一个 name 字段
+                    auto_name,
                     req.num_jobs,
                     req.arrival_rate,
                     req.num_gpus,
@@ -275,60 +277,6 @@ def run_simulation(req: SimRequest):
     except Exception as e:
         return {"error": str(e)}
 
-
-# 增加：Straggler (掉队者) 检测接口
-# 更新数据目录路径
-STRAGGLER_DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "mini-batch-time", "data"))
-
-@app.get("/api/analysis/stragglers")
-def detect_stragglers():
-    try:
-        # 1. 模拟从数据库/日志读取 Job 的 mini-batch-time 序列
-        # 在真实场景中，你会从 analysis_wide_table 按照 job_name 分组查询 inst_start/inst_end
-        # 这里保留你的原始分析逻辑
-        analysis_results = []
-        for i in range(1, 4):  # 假设分析前3个 Job
-            try:
-                # 模拟数据：每个 Job 有 50 个 mini-batch 的耗时
-                batch_times = np.random.normal(loc=1.0, scale=0.1, size=50)
-                if i == 2:  # 故意让第二个 Job 产生波动
-                    batch_times[25] = 5.0
-
-                avg_t = np.mean(batch_times)
-                std_t = np.std(batch_times)
-                final_cov = std_t / avg_t
-
-                # 找到最慢的那个点（模拟）
-                max_idx = np.argmax(batch_times)
-                max_time_point = f"Batch_{max_idx}"
-                max_cov = batch_times[max_idx] / avg_t
-                slowest_worker_id = np.random.randint(1000, 9999)
-
-                status = "Healthy" if final_cov < 0.3 else "Warning"
-                if final_cov > 0.6: status = "Critical"
-
-                analysis_results.append({
-                    "job_id": f"Job {i}",
-                    "status": status,
-                    "cov": round(float(final_cov), 3),
-                    "max_cov": round(float(max_cov), 3),
-                    "reason": f"在时间点 {max_time_point} 波动最大，Worker {int(slowest_worker_id)} 严重拖慢进度",
-                    "suggestion": "检查该节点 GPU 频率或网络 IO 瓶颈" if status != "Healthy" else "运行平稳"
-                })
-            except Exception as e:
-                print(f"解析 Job {i} 失败: {e}")
-                continue
-
-        # 2. 读取作者预计算好的 coefficient_variation.csv (可选)
-        # 如果展示汇总数据，也可以把这个文件的内容读出来返回给前端
-
-        return {
-            "success": True,
-            "summary": f"基于 mini-batch-time 分析，发现 {len([x for x in analysis_results if x['status'] != 'Healthy'])} 个作业存在 Straggler 风险。",
-            "details": analysis_results
-        }
-    except Exception as e:
-        return {"error": str(e)}
 
 # 获取历史记录列表（只返回摘要，不返回完整 results）
 @app.get("/api/simulator/history")
@@ -366,7 +314,6 @@ def get_sim_history_detail(record_id: int):
     }
     return {"record": record}
 
-
 # 删除某条历史记录
 @app.delete("/api/simulator/history/{record_id}")
 def delete_sim_history(record_id: int):
@@ -376,20 +323,23 @@ def delete_sim_history(record_id: int):
     conn.close()
     return {"success": True}
 
-# --- 关键：将 AI 接口移出函数体，确保路由独立注册 ---
+# =====集群快照接口，供前端左侧面板展示 =====
+@app.get("/api/analysis/cluster-snapshot")
+def get_cluster_snapshot():
+    data = analyser.get_cluster_snapshot_for_ui()
+    return data
+
+
+# ===== 新增：对话请求体模型 =====
+class ChatRequest(BaseModel):
+    messages: list   # [{"role": "user"/"assistant", "content": "..."}]
+
+
+# ===== AI 对话接口（支持多轮） =====
 @app.post("/api/analysis/ai-report")
-async def get_ai_report():
-    """
-    一键 AI 专家诊断接口
-    """
-    # 1. 聚合情报 (通过 DB_PATH 获取最新 KPI 和异常线索)
-    # latest_sim_results 会读取在 run_simulation 中更新后的全局变量
-    context = analyser.get_ai_intelligence_context(latest_sim_results)
-
-    # 2. 调用通义千问大模型进行专家级研判
-    report = analyser.ask_qwen_expert(context)
-
-    return {"analysis": report}
+async def get_ai_report(req: ChatRequest):
+    reply = analyser.chat(req.messages)
+    return {"reply": reply}
 
 if __name__ == "__main__":
     import uvicorn
