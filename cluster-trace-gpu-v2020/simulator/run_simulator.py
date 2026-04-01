@@ -25,14 +25,14 @@ NUM_JOBS = args.num_jobs
 ARRIVAL_RATE = args.arrival_rate
 NUM_GPUS = args.num_gpus
 REPEAT = args.repeat
-SORT_NODE_POLICY = 0 if args.packing_policy is True else 3
+#SORT_NODE_POLICY = 0 if args.packing_policy is True else 3
 
 MAX_TIME = int(1e9)
 VERBOSE = 0
 LOG_LEVEL = logging.WARNING
 NUM_NODES = 1
 NUM_CPUS = round(23.22 * NUM_GPUS)
-HETERO = False
+#HETERO = False
 PATTERN = 0
 GPU_TYPE_MATCHING = 0
 EXPORT_JOB_STATS = False
@@ -41,6 +41,9 @@ RANDOM_SEED = 42
 NUM_SPARE_NODE = 0
 SORT_BY_JCT = True
 LOG_DIR = Path(__file__).parent / 'logs'
+# ===== 新增：从环境变量读取异构模式 =====
+hetero_env = os.environ.get('HETERO', '0')
+HETERO = (hetero_env == '1')
 
 # ===== 从环境变量读取选中的算法列表 =====
 selected_algos_env = os.environ.get('SELECTED_ALGOS', '')
@@ -51,6 +54,21 @@ if selected_algos_env:
         SELECTED_ALGOS = [0, 1, 2, 4, 8]  # 解析失败则跑全部
 else:
     SELECTED_ALGOS = [0, 1, 2, 4, 8]  # 默认跑全部
+
+# ===== 新增：从环境变量读取打包策略 =====
+# 原来靠命令行 -k/-b 参数，现在改为环境变量优先
+packing_env = os.environ.get('PACKING_POLICY', '')
+if packing_env == '1':
+    SORT_NODE_POLICY = 0   # 打包：优先填满节点
+else:
+    SORT_NODE_POLICY = 3   # 负载均衡：优先分配到空闲节点（默认）
+
+# ===== 新增：从环境变量读取预留策略 =====
+gpu_matching_env = os.environ.get('GPU_TYPE_MATCHING', '')
+try:
+    GPU_TYPE_MATCHING = int(gpu_matching_env) if gpu_matching_env else 0
+except ValueError:
+    GPU_TYPE_MATCHING = 0
 
 comments = '%dg_%dn_h%d_%dp_%dsn_%dgt-%dar-%dj-%dx-%dr' % (
     NUM_GPUS, NUM_NODES, HETERO, PATTERN, SORT_NODE_POLICY,

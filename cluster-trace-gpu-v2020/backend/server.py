@@ -158,6 +158,9 @@ class SimRequest(BaseModel):
     num_jobs: int = 9000
     arrival_rate: int = 1000
     num_gpus: int = 6500
+    packing_policy: int = 0  # 0=负载均衡, 1=打包
+    gpu_type_matching: int = 0  # 0=无预留, 1=严格预留, 2=V100专属
+    hetero: bool = False
 @app.post("/api/simulator/run")
 def run_simulation(req: SimRequest):
     try:
@@ -165,6 +168,9 @@ def run_simulation(req: SimRequest):
 
         env = os.environ.copy()
         env['SELECTED_ALGOS'] = ','.join(str(a) for a in req.algorithms)
+        env['PACKING_POLICY'] = str(req.packing_policy)
+        env['GPU_TYPE_MATCHING'] = str(req.gpu_type_matching)
+        env['HETERO'] = '1' if req.hetero else '0'  # ← 新增
 
         result = subprocess.run(
             [
@@ -233,24 +239,29 @@ def run_simulation(req: SimRequest):
             # ===== 写入历史记录（在仿真成功、results 已赋值之后）=====
             try:
                 algo_names = ','.join(r['algo'] for r in results)
-                # 1. 获取当前完整时间：2026-03-25 17:10:11
                 full_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                # 2. 判断模式标签
                 mode_label = "单项" if len(req.algorithms) == 1 else "对比"
-                # 3. 构造格式：[对比] 2026-03-25 17:10:11
-                auto_name = f"[{mode_label}] {full_time_str}"
+                cluster_label = "异构" if req.hetero else "单节点"
+                auto_name = f"[{mode_label}·{cluster_label}] {full_time_str}"
+
+                # mode 字段编码为 single/compare/single_hetero/compare_hetero
+                algo_mode = 'single' if len(req.algorithms) == 1 else 'compare'
+                mode_str = f"{algo_mode}_hetero" if req.hetero else algo_mode
 
                 conn_hist = sqlite3.connect(DB_PATH)
                 conn_hist.execute("""
-                    INSERT INTO simulation_history 
-                    (created_at, num_jobs, arrival_rate, num_gpus, mode, algorithms, results)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO simulation_history
+                    (created_at, num_jobs, arrival_rate, num_gpus, mode,
+                     packing_policy, gpu_type_matching, algorithms, results)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     auto_name,
                     req.num_jobs,
                     req.arrival_rate,
-                    req.num_gpus,
-                    'single' if len(req.algorithms) == 1 else 'compare',
+                    req.num_gpus if not req.hetero else 1352,
+                    mode_str,
+                    req.packing_policy if req.hetero else 0,
+                    req.gpu_type_matching if req.hetero else 0,
                     algo_names,
                     json.dumps(results, ensure_ascii=False)
                 ))
@@ -282,37 +293,78 @@ def run_simulation(req: SimRequest):
 @app.get("/api/simulator/history")
 def get_sim_history():
     conn = sqlite3.connect(DB_PATH)
-    rows = pd.read_sql("""
-        SELECT id, created_at, num_jobs, arrival_rate, num_gpus, mode, algorithms
-        FROM simulation_history
-        ORDER BY id DESC
-        LIMIT 20
-    """, conn).to_dict(orient='records')
-    conn.close()
-    return {"history": rows}
+    try:
+        rows = pd.read_sql("""
+            SELECT id, created_at, num_jobs, arrival_rate, num_gpus, mode, algorithms
+            FROM simulation_history
+            ORDER BY id DESC
+            LIMIT 20
+        """, conn).to_dict(orient='records')
+        # ===== 修复：把 numpy 类型转成 Python 原生类型 =====
+        clean_rows = []
+        for r in rows:
+            clean_rows.append({
+                "id": int(r['id']),
+                "created_at": str(r['created_at']),
+                "num_jobs": int(r['num_jobs']),
+                "arrival_rate": int(r['arrival_rate']),
+                "num_gpus": int(r['num_gpus']),
+                "mode": str(r['mode']),
+                "algorithms": str(r['algorithms']),
+            })
+        return {"history": clean_rows}
+    except Exception as e:
+        print(f"获取历史记录失败: {e}")
+        return {"history": []}
+    finally:
+        conn.close()
 
 
 # 获取某条历史记录的完整结果
 @app.get("/api/simulator/history/{record_id}")
 def get_sim_history_detail(record_id: int):
-    import json
     conn = sqlite3.connect(DB_PATH)
-    row = pd.read_sql(
-        "SELECT * FROM simulation_history WHERE id = ?",
-        conn, params=(record_id,)
-    )
-    conn.close()
-    if row.empty:
-        return {"error": "记录不存在"}
-    record = row.iloc[0].to_dict()
-    record['results'] = json.loads(record['results'])
-    # 显式构造一个 config 对象发给前端
-    record['config'] = {
-        "num_jobs": record['num_jobs'],
-        "arrival_rate": record['arrival_rate'],
-        "num_gpus": record['num_gpus']
-    }
-    return {"record": record}
+    try:
+        row = pd.read_sql(
+            "SELECT * FROM simulation_history WHERE id = ?",
+            conn, params=(record_id,)
+        )
+        if row.empty:
+            return {"error": "记录不存在"}
+        r = row.iloc[0]
+
+        # 从 mode 字段解析 hetero
+        mode_str = str(r.get('mode', 'compare'))
+        is_hetero = '_hetero' in mode_str
+
+        # packing_policy / gpu_type_matching 可能不存在（旧表结构）
+        packing = r.get('packing_policy')
+        gpu_match = r.get('gpu_type_matching')
+
+        record = {
+            "id": int(r['id']),
+            "created_at": str(r['created_at']),
+            "num_jobs": int(r['num_jobs']),
+            "arrival_rate": int(r['arrival_rate']),
+            "num_gpus": int(r['num_gpus']),
+            "mode": mode_str,
+            "algorithms": str(r['algorithms']),
+            "results": json.loads(str(r['results'])),
+            "config": {
+                "num_jobs": int(r['num_jobs']),
+                "arrival_rate": int(r['arrival_rate']),
+                "num_gpus": int(r['num_gpus']),
+                "hetero": is_hetero,
+                "packing_policy": int(packing) if packing is not None else 0,
+                "gpu_type_matching": int(gpu_match) if gpu_match is not None else 0,
+            }
+        }
+        return {"record": record}
+    except Exception as e:
+        print(f"获取历史详情失败: {e}")
+        return {"error": str(e)}
+    finally:
+        conn.close()
 
 # 删除某条历史记录
 @app.delete("/api/simulator/history/{record_id}")

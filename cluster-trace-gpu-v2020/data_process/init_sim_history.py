@@ -10,16 +10,20 @@ engine = create_engine(f'sqlite:///{db_path}')
 
 # 使用 begin() 自动处理事务提交
 with engine.begin() as conn:
+    conn.execute(text("DROP TABLE IF EXISTS simulation_history"))
     conn.execute(text("""
+    
         CREATE TABLE IF NOT EXISTS simulation_history (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at   TEXT    NOT NULL,
-            num_jobs     INTEGER NOT NULL,
-            arrival_rate INTEGER NOT NULL,
-            num_gpus     INTEGER NOT NULL,
-            mode         TEXT    NOT NULL,
-            algorithms   TEXT    NOT NULL,
-            results      TEXT    NOT NULL
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at        TEXT    NOT NULL,
+            num_jobs          INTEGER NOT NULL,
+            arrival_rate      INTEGER NOT NULL,
+            num_gpus          INTEGER NOT NULL,
+            mode              TEXT    NOT NULL, -- 'single' 或 'hetero'
+            packing_policy    INTEGER DEFAULT 0, -- 新增：节点分配策略
+            gpu_type_matching INTEGER DEFAULT 0, -- 新增：GPU预留策略
+            algorithms        TEXT    NOT NULL,
+            results           TEXT    NOT NULL
         )
     """))
     # 不需要 conn.commit()，退出 with 块时会自动提交

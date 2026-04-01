@@ -5,7 +5,7 @@ import random
 import csv
 import copy
 import numpy as np
-from utils import print_fn, _add_job, _repr_job_done, _add_describe, GPU_TYPE_INT_DICT
+from utils import print_fn, _add_job, _repr_job_done, _add_describe, GPU_TYPE_INT_DICT,large_job_pruning
 from cluster import Cluster
 from node import Node
 from scheduler import Scheduler
@@ -121,32 +121,58 @@ class Simulator:
 
     def init_go(self, num_jobs=None):
         self.cur_time = 0
+        # 1. 拷贝原始任务列表
         self.job_list = copy.deepcopy(self.job_origin_list)  # copy each obj in the list
+
+        # 2. 确定任务数量并随机截取
         num_jobs = num_jobs if num_jobs is not None else self.num_jobs_limit
         if (num_jobs is not None) and num_jobs <= len(self.job_list):
             random.shuffle(self.job_list)
             self.job_list = self.job_list[:num_jobs]
+
+        # 3. 【新增逻辑】在异构模式下，在这里剔除无法调度的超大任务
+        if self.hetero:
+            # V100 节点的物理极限：8卡/96CPU (缩放100倍后为 800/9600)
+            LIMIT_GPU = 800
+            LIMIT_CPU = 9600
+
+            print_fn("Checking for large jobs in Hetero mode...")
+            original_count = len(self.job_list)
+
+            # 注意这里：参数名改为 gpu_limit 和 cpu_limit
+            self.job_list = large_job_pruning(
+                self.job_list,
+                gpu_limit=LIMIT_GPU,
+                cpu_limit=LIMIT_CPU,
+            )
+
+            if len(self.job_list) < original_count:
+                print_fn("Pruned %d oversized jobs." % (original_count - len(self.job_list)))
+
+        # 4. 设置到达时间
         self.set_job_list_arrival_time(self.job_list, self.arrival_rate, self.arrival_interval, self.arrival_shuffle)
+
         print_fn("----------------------------- RANDOM: %d" % random.randint(1000, 9999))
         print_fn("%d Job loaded" % len(self.job_list))
 
-        # Init Cluster resources
+        # 5. 初始化集群资源
         if self.hetero:
             node_list = self.init_node_list_hetero()
         elif self.num_nodes == 1 and self.num_gpus is not None:  # i.e., one big node formulation
             node_list = [Node(id=1, num_gpus=self.num_gpus, num_cpus=self.num_cpus)]
         else:
             node_list = self.init_node_list()
+
+        # 6. 初始化集群和调度器
         self.cluster = Cluster(node_list=node_list, job_list=self.job_list, random_seed=random.randint(1000, 9999),
                                num_spare_node=self.num_spare_node, pattern=self.pattern,
                                export_cluster_util=self.export_cluster_util)
-
         self.scheduler = Scheduler(cluster=self.cluster, alloc_policy=self.alloc_policy,
                                    preempt_policy=self.preempt_policy, sort_node_policy=self.sort_node_policy,
                                    verbose=self.verbose, gpu_type_matching=self.gpu_type_matching)
+
         self.num_jobs = len(self.job_list)
         self.exit_flag = 0
-
         print_fn("Spared nodes: %s" % self.cluster.spare_node_id)
 
     def exp_summary(self, id=None):

@@ -4,12 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3b8b5e4e-b142-4816-91f2-367d8374817d" name="更改" comment="修改数据大屏，增加仿真器功能">
+    <list default="true" id="3b8b5e4e-b142-4816-91f2-367d8374817d" name="更改" comment="ai智能报告页面">
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/analysis/analysis.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/analysis/analysis.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend/llm_analyser.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend/llm_analyser.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend/server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/frontend/src/views/AIReport.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/frontend/src/views/AIReport.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process/init_sim_history.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process/init_sim_history.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/frontend/src/views/simulator.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/frontend/src/views/simulator.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/run_simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/run_simulator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/simulator.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +27,9 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GithubDefaultAccount">
+    <option name="defaultAccountId" value="63589f39-2c40-4034-9eb9-892c6297cdea" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -53,14 +58,14 @@
     &quot;Python.version.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;last_opened_file_path&quot;: &quot;E:/Z_MyPROJECT/python_project/peoject_design_mlaas/MLaaS&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.Mappings&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;org.jetbrains.plugins.github.ui.GithubSettingsConfigurable&quot;,
     &quot;ts.external.directory.path&quot;: &quot;D:\\pycharm\\PyCharm 2023.3.4\\plugins\\javascript-impl\\jsLanguageServicesImpl\\external&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
@@ -231,7 +236,11 @@
       <workItem from="1774505238025" duration="13598000" />
       <workItem from="1774528893221" duration="681000" />
       <workItem from="1774592720772" duration="581000" />
-      <workItem from="1774689369311" duration="802000" />
+      <workItem from="1774689369311" duration="3758000" />
+      <workItem from="1774855433786" duration="595000" />
+      <workItem from="1774857543578" duration="3448000" />
+      <workItem from="1774894569640" duration="14294000" />
+      <workItem from="1775025029652" duration="1853000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <option name="closed" value="true" />
@@ -273,18 +282,74 @@
       <option name="project" value="LOCAL" />
       <updated>1774330757244</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="ai智能报告页面">
+      <option name="closed" value="true" />
+      <created>1774691090583</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1774691090583</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="Branch">
+          <value>
+            <list>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="main" />
+                </option>
+              </RecentGroup>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="origin/main" />
+                </option>
+              </RecentGroup>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="HEAD" />
+                </option>
+              </RecentGroup>
+            </list>
+          </value>
+        </entry>
+        <entry key="User">
+          <value>
+            <list>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="*" />
+                </option>
+              </RecentGroup>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
     <option name="TAB_STATES">
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
@@ -294,7 +359,8 @@
     <MESSAGE value="test" />
     <MESSAGE value="first push" />
     <MESSAGE value="修改数据大屏，增加仿真器功能" />
-    <option name="LAST_COMMIT_MESSAGE" value="修改数据大屏，增加仿真器功能" />
+    <MESSAGE value="ai智能报告页面" />
+    <option name="LAST_COMMIT_MESSAGE" value="ai智能报告页面" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/MLaaS$check_version.coverage" NAME="check_version 覆盖结果" MODIFIED="1766657893012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020" />
@@ -303,9 +369,9 @@
     <SUITE FILE_PATH="coverage/MLaaS$fix_db.coverage" NAME="fix_db 覆盖结果" MODIFIED="1768603860323" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
     <SUITE FILE_PATH="coverage/MLaaS$check_ai.coverage" NAME="check_ai 覆盖结果" MODIFIED="1768684042360" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020" />
     <SUITE FILE_PATH="coverage/MLaaS$create_views.coverage" NAME="create_views 覆盖结果" MODIFIED="1774267831709" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
-    <SUITE FILE_PATH="coverage/MLaaS$server.coverage" NAME="server 覆盖结果" MODIFIED="1774521316980" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend" />
+    <SUITE FILE_PATH="coverage/MLaaS$server.coverage" NAME="server 覆盖结果" MODIFIED="1775025208760" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend" />
     <SUITE FILE_PATH="coverage/MLaaS$data_ingestion.coverage" NAME="data_ingestion 覆盖结果" MODIFIED="1768603612184" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
-    <SUITE FILE_PATH="coverage/MLaaS$init_sim_history.coverage" NAME="init_sim_history 覆盖结果" MODIFIED="1774290799813" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
+    <SUITE FILE_PATH="coverage/MLaaS$init_sim_history.coverage" NAME="init_sim_history 覆盖结果" MODIFIED="1774956324400" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
     <SUITE FILE_PATH="coverage/MLaaS$main.coverage" NAME="main 覆盖结果" MODIFIED="1774076994254" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend" />
   </component>
 </project>
