@@ -4,13 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3b8b5e4e-b142-4816-91f2-367d8374817d" name="更改" comment="ai智能报告页面">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+    <list default="true" id="3b8b5e4e-b142-4816-91f2-367d8374817d" name="更改" comment="仿真器异构功能">
+      <change beforePath="$PROJECT_DIR$/.idea/MLaaS.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/MLaaS.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend/server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process/init_sim_history.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process/init_sim_history.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/frontend/src/views/simulator.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/frontend/src/views/simulator.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/run_simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/run_simulator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/cluster.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/scheduler.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/scheduler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/simulator.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -28,8 +26,22 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;LAObeeDENG&quot;
+  }
+}</component>
   <component name="GithubDefaultAccount">
     <option name="defaultAccountId" value="63589f39-2c40-4034-9eb9-892c6297cdea" />
+  </component>
+  <component name="GithubPullRequestsUISettings">
+    <option name="selectedUrlAndAccountId">
+      <UrlAndAccount>
+        <option name="accountId" value="63589f39-2c40-4034-9eb9-892c6297cdea" />
+        <option name="url" value="git@github.com:LAObeeDENG/PAI-Visualization-System.git" />
+      </UrlAndAccount>
+    </option>
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -53,13 +65,17 @@
     &quot;Python.fix_db.executor&quot;: &quot;Run&quot;,
     &quot;Python.init_sim_history.executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.run_simulator_bayesian.executor&quot;: &quot;Run&quot;,
+    &quot;Python.run_simulator_reserve (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.run_simulator_reserve.executor&quot;: &quot;Run&quot;,
     &quot;Python.server.executor&quot;: &quot;Run&quot;,
     &quot;Python.utils.executor&quot;: &quot;Run&quot;,
     &quot;Python.version.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;E:/Z_MyPROJECT/python_project/peoject_design_mlaas/MLaaS&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/Z_MyPROJECT/python_project/peoject_design_mlaas/MLaaS/cluster-trace-gpu-v2020/simulator/exp&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -70,30 +86,16 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="Python.server">
-    <configuration name="create_views" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="MLaaS" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process/create_views.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="E:\Z_MyPROJECT\python_project\peoject_design_mlaas\MLaaS\cluster-trace-gpu-v2020\simulator\exp" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\Z_MyPROJECT\python_project\peoject_design_mlaas\MLaaS\cluster-trace-gpu-v2020\simulator" />
+      <recent name="E:\Z_MyPROJECT\python_project\peoject_design_mlaas\MLaaS\cluster-trace-gpu-v2020\simulator\exp" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.run_simulator_reserve">
     <configuration name="init_sim_history" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="MLaaS" />
       <option name="ENV_FILES" value="" />
@@ -117,7 +119,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="run_simulator_bayesian" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="MLaaS" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -126,12 +128,58 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend/main.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/run_simulator_bayesian.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="run_simulator_reserve (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="MLaaS" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/exp" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/exp/run_simulator_reserve.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="run_simulator_reserve" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="MLaaS" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/run_simulator_reserve.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -163,36 +211,13 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="version" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="MLaaS" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cluster-trace-gpu-v2020" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/cluster-trace-gpu-v2020/version.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.run_simulator_reserve" />
+        <item itemvalue="Python.run_simulator_bayesian" />
+        <item itemvalue="Python.run_simulator_reserve (1)" />
+        <item itemvalue="Python.run_simulator_reserve (1)" />
         <item itemvalue="Python.server" />
-        <item itemvalue="Python.init_sim_history" />
-        <item itemvalue="Python.create_views" />
-        <item itemvalue="Python.version" />
-        <item itemvalue="Python.main" />
       </list>
     </recent_temporary>
   </component>
@@ -240,7 +265,18 @@
       <workItem from="1774855433786" duration="595000" />
       <workItem from="1774857543578" duration="3448000" />
       <workItem from="1774894569640" duration="14294000" />
-      <workItem from="1775025029652" duration="1853000" />
+      <workItem from="1775025029652" duration="6184000" />
+      <workItem from="1775059589098" duration="7723000" />
+      <workItem from="1775209934776" duration="5595000" />
+      <workItem from="1775235129590" duration="8456000" />
+      <workItem from="1775412839591" duration="24000" />
+      <workItem from="1775412977421" duration="14000" />
+      <workItem from="1775417469938" duration="1255000" />
+      <workItem from="1775559666251" duration="733000" />
+      <workItem from="1775580408844" duration="59000" />
+      <workItem from="1775624210511" duration="2168000" />
+      <workItem from="1775685407957" duration="153000" />
+      <workItem from="1775711306339" duration="3865000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <option name="closed" value="true" />
@@ -290,7 +326,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774691090583</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="仿真器异构功能">
+      <option name="closed" value="true" />
+      <created>1775031009896</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1775031009896</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -360,18 +404,22 @@
     <MESSAGE value="first push" />
     <MESSAGE value="修改数据大屏，增加仿真器功能" />
     <MESSAGE value="ai智能报告页面" />
-    <option name="LAST_COMMIT_MESSAGE" value="ai智能报告页面" />
+    <MESSAGE value="仿真器异构功能" />
+    <option name="LAST_COMMIT_MESSAGE" value="仿真器异构功能" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/MLaaS$run_simulator_reserve.coverage" NAME="run_simulator_reserve 覆盖结果" MODIFIED="1775714726646" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator" />
     <SUITE FILE_PATH="coverage/MLaaS$check_version.coverage" NAME="check_version 覆盖结果" MODIFIED="1766657893012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020" />
     <SUITE FILE_PATH="coverage/MLaaS$utils.coverage" NAME="utils 覆盖结果" MODIFIED="1766665795450" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/analysis" />
     <SUITE FILE_PATH="coverage/MLaaS$version.coverage" NAME="version 覆盖结果" MODIFIED="1774163473280" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020" />
-    <SUITE FILE_PATH="coverage/MLaaS$fix_db.coverage" NAME="fix_db 覆盖结果" MODIFIED="1768603860323" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
-    <SUITE FILE_PATH="coverage/MLaaS$check_ai.coverage" NAME="check_ai 覆盖结果" MODIFIED="1768684042360" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020" />
+    <SUITE FILE_PATH="coverage/MLaaS$run_simulator_bayesian.coverage" NAME="run_simulator_bayesian 覆盖结果" MODIFIED="1775240202631" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator" />
     <SUITE FILE_PATH="coverage/MLaaS$create_views.coverage" NAME="create_views 覆盖结果" MODIFIED="1774267831709" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
-    <SUITE FILE_PATH="coverage/MLaaS$server.coverage" NAME="server 覆盖结果" MODIFIED="1775025208760" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend" />
+    <SUITE FILE_PATH="coverage/MLaaS$check_ai.coverage" NAME="check_ai 覆盖结果" MODIFIED="1768684042360" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020" />
+    <SUITE FILE_PATH="coverage/MLaaS$fix_db.coverage" NAME="fix_db 覆盖结果" MODIFIED="1768603860323" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
     <SUITE FILE_PATH="coverage/MLaaS$data_ingestion.coverage" NAME="data_ingestion 覆盖结果" MODIFIED="1768603612184" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
-    <SUITE FILE_PATH="coverage/MLaaS$init_sim_history.coverage" NAME="init_sim_history 覆盖结果" MODIFIED="1774956324400" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
     <SUITE FILE_PATH="coverage/MLaaS$main.coverage" NAME="main 覆盖结果" MODIFIED="1774076994254" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend" />
+    <SUITE FILE_PATH="coverage/MLaaS$run_simulator_reserve__1_.coverage" NAME="run_simulator_reserve (1) 覆盖结果" MODIFIED="1775212238297" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/simulator/exp" />
+    <SUITE FILE_PATH="coverage/MLaaS$server.coverage" NAME="server 覆盖结果" MODIFIED="1775127902020" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/backend" />
+    <SUITE FILE_PATH="coverage/MLaaS$init_sim_history.coverage" NAME="init_sim_history 覆盖结果" MODIFIED="1774956324400" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cluster-trace-gpu-v2020/data_process" />
   </component>
 </project>

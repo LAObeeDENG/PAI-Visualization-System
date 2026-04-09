@@ -1,32 +1,23 @@
-# Date: 03.28
-# Note: 2D: CPU + GPU
-
 import random
 import csv
 import copy
 import numpy as np
-from utils import print_fn, _add_job, _repr_job_done, _add_describe, GPU_TYPE_INT_DICT,large_job_pruning
+from utils import print_fn, _add_job, _repr_job_done, _add_describe, GPU_TYPE_INT_DICT, large_job_pruning
 from cluster import Cluster
 from node import Node
 from scheduler import Scheduler
-
-""" Jobs
-OrderedDict
-keys: job_id,duration,resource=[num_gpu, num_cpu]
-      duration,size,on_time,wasted,jct,
-      # submit_time,model_name,iterations,interval
-"""
 
 
 class Simulator:
     def __init__(self, csv_file, alloc_policy=0, preempt_policy=0,
                  sort_node_policy=0, oracle=False, random_seed=42,
                  max_time=int(1e10), num_gpus=None, num_cpus=None, num_nodes=4,
-                 pattern=1, delta=10, num_spare_node=1, #delta改为10
+                 pattern=1, delta=10, num_spare_node=1,
                  hetero=False, describe_file=None, export_job_stats=False,
                  export_cluster_util=False, log_file=None, arrival_rate=None,
                  arrival_interval=60, arrival_shuffle=False,
-                 num_jobs_limit=None, gpu_type_matching=0, verbose=0):
+                 num_jobs_limit=None, gpu_type_matching=0, verbose=0,
+                 reserve_ratio=0.0):          # ← 新增参数
         self.cluster = None
         self.scheduler = None
         self.cur_time = None
@@ -39,36 +30,33 @@ class Simulator:
         self.num_cpus = num_cpus
         self.num_nodes = num_nodes
         self.csv_file = csv_file
-        self.oracle = oracle  # know fluctuation?
+        self.oracle = oracle
         self.alloc_policy = alloc_policy
         self.preempt_policy = preempt_policy
         self.sort_node_policy = sort_node_policy
-        self.describe_dict = _add_describe(describe_file)  # describe_file: each users' job distribution in csv format.
-        self.arrival_rate = arrival_rate  # job arrival rate
+        self.describe_dict = _add_describe(describe_file)
+        self.arrival_rate = arrival_rate
         self.arrival_interval = arrival_interval
         self.arrival_shuffle = arrival_shuffle
         self.num_jobs_limit = num_jobs_limit
         self.job_origin_list = self.add_job(self.csv_file, self.describe_dict, limit=num_jobs_limit * 10)
-        self.pattern = pattern  # which resource varying pattern?
-        self.delta = delta  # time granularity, minimum: 1 second.
+        self.pattern = pattern
+        self.delta = delta
         self.num_spare_node = num_spare_node
         self.hetero = hetero
         self.gpu_type_matching = gpu_type_matching
         self.export_job_stats = export_job_stats
         self.export_cluster_util = export_cluster_util
-        self.log_file = log_file  # just pass the path
+        self.log_file = log_file
         self.verbose = verbose
+        self.reserve_ratio = reserve_ratio   # ← 存储
         random.seed(random_seed)
 
     @staticmethod
     def add_job(csv_file, describe_dict, limit=None):
-        """
-        limit: To avoid reading too many jobs when the sampled number << total number of jobs in trace file.
-        """
         job_list = []
         with open(csv_file, 'r') as fd:
             reader = csv.DictReader(fd, delimiter=',')
-            keys = reader.fieldnames
             for i, row in enumerate(reader):
                 _add_job(job_list, row, describe_dict)
                 if limit is not None and i >= limit:
@@ -77,14 +65,8 @@ class Simulator:
 
     @staticmethod
     def set_job_list_arrival_time(job_list, arrival_rate=None, interval=60, shuffle_order=False):
-        """
-        job_list: jobs to execute in this run
-        arrival_rate: num of jobs to arrive at each time interval (-1 or None means no changes)
-        interval: time interval (default: 60)
-        shuffle_order: bool, whether each user's inherent job order are shuffled (default: False)
-        """
         if arrival_rate is None or arrival_rate < 0:
-            return 0  # respect the original submit time
+            return 0
         if shuffle_order is True:
             np.random.shuffle(job_list)
         else:
@@ -102,16 +84,16 @@ class Simulator:
     def init_node_list_hetero(self):
         node_list = []
         node_id = 0
-        for _ in range(16):  # low-ended machines first
+        for _ in range(16):
             node_list.append(Node(node_id, 0, 96, gpu_type='CPU'))
             node_id += 1
-        for _ in range(56):  # low-ended machines first
+        for _ in range(56):
             node_list.append(Node(node_id, 8, 96, gpu_type='MISC'))
             node_id += 1
-        for _ in range(100):  # low-ended machines first
+        for _ in range(100):
             node_list.append(Node(node_id, 2, 96, gpu_type='T4'))
             node_id += 1
-        for _ in range(160):  # low-ended machines first
+        for _ in range(160):
             node_list.append(Node(node_id, 2, 64, gpu_type='P100'))
             node_id += 1
         for _ in range(48):
@@ -121,55 +103,59 @@ class Simulator:
 
     def init_go(self, num_jobs=None):
         self.cur_time = 0
-        # 1. 拷贝原始任务列表
-        self.job_list = copy.deepcopy(self.job_origin_list)  # copy each obj in the list
+        self.job_list = copy.deepcopy(self.job_origin_list)
 
-        # 2. 确定任务数量并随机截取
         num_jobs = num_jobs if num_jobs is not None else self.num_jobs_limit
         if (num_jobs is not None) and num_jobs <= len(self.job_list):
             random.shuffle(self.job_list)
             self.job_list = self.job_list[:num_jobs]
 
-        # 3. 【新增逻辑】在异构模式下，在这里剔除无法调度的超大任务
+        # 异构模式下剔除超大任务（避免卡死）
         if self.hetero:
-            # V100 节点的物理极限：8卡/96CPU (缩放100倍后为 800/9600)
-            LIMIT_GPU = 800
-            LIMIT_CPU = 9600
-
+            LIMIT_GPU = 800    # 单节点最大 8 GPU（内部单位 ×100）
+            LIMIT_CPU = 9600   # 单节点最大 96 CPU（内部单位 ×100）
             print_fn("Checking for large jobs in Hetero mode...")
             original_count = len(self.job_list)
-
-            # 注意这里：参数名改为 gpu_limit 和 cpu_limit
             self.job_list = large_job_pruning(
                 self.job_list,
                 gpu_limit=LIMIT_GPU,
                 cpu_limit=LIMIT_CPU,
             )
-
             if len(self.job_list) < original_count:
                 print_fn("Pruned %d oversized jobs." % (original_count - len(self.job_list)))
 
-        # 4. 设置到达时间
-        self.set_job_list_arrival_time(self.job_list, self.arrival_rate, self.arrival_interval, self.arrival_shuffle)
+        self.set_job_list_arrival_time(
+            self.job_list, self.arrival_rate, self.arrival_interval, self.arrival_shuffle)
 
         print_fn("----------------------------- RANDOM: %d" % random.randint(1000, 9999))
         print_fn("%d Job loaded" % len(self.job_list))
 
-        # 5. 初始化集群资源
+        # 初始化集群
         if self.hetero:
             node_list = self.init_node_list_hetero()
-        elif self.num_nodes == 1 and self.num_gpus is not None:  # i.e., one big node formulation
+        elif self.num_nodes == 1 and self.num_gpus is not None:
             node_list = [Node(id=1, num_gpus=self.num_gpus, num_cpus=self.num_cpus)]
         else:
             node_list = self.init_node_list()
 
-        # 6. 初始化集群和调度器
-        self.cluster = Cluster(node_list=node_list, job_list=self.job_list, random_seed=random.randint(1000, 9999),
-                               num_spare_node=self.num_spare_node, pattern=self.pattern,
-                               export_cluster_util=self.export_cluster_util)
-        self.scheduler = Scheduler(cluster=self.cluster, alloc_policy=self.alloc_policy,
-                                   preempt_policy=self.preempt_policy, sort_node_policy=self.sort_node_policy,
-                                   verbose=self.verbose, gpu_type_matching=self.gpu_type_matching)
+        self.cluster = Cluster(
+            node_list=node_list,
+            job_list=self.job_list,
+            random_seed=random.randint(1000, 9999),
+            num_spare_node=self.num_spare_node,
+            pattern=self.pattern,
+            export_cluster_util=self.export_cluster_util,
+            reserve_ratio=self.reserve_ratio,   # ← 传入 Cluster
+        )
+
+        self.scheduler = Scheduler(
+            cluster=self.cluster,
+            alloc_policy=self.alloc_policy,
+            preempt_policy=self.preempt_policy,
+            sort_node_policy=self.sort_node_policy,
+            verbose=self.verbose,
+            gpu_type_matching=self.gpu_type_matching,
+        )
 
         self.num_jobs = len(self.job_list)
         self.exit_flag = 0
@@ -188,9 +174,13 @@ class Simulator:
         if num_jobs_done == self.num_jobs:
             print_fn("All Done (makespan) at %s" % self.cur_time)
         else:
-            print_fn("%d of %d jobs Done (makespan) at %s" % (num_jobs_done, self.num_jobs, self.cur_time))
-        print_fn("%d jobs' average JCT: %.4f, average wait time: %.4f" % (num_jobs_done, jct_summary / num_jobs_done, wait_time_summary / num_jobs_done))
-        # Print job done breakdown
+            print_fn("%d of %d jobs Done (makespan) at %s" % (
+                num_jobs_done, self.num_jobs, self.cur_time))
+        print_fn("%d jobs' average JCT: %.4f, average wait time: %.4f" % (
+            num_jobs_done,
+            jct_summary / num_jobs_done,
+            wait_time_summary / num_jobs_done))
+
         job_done_list.sort(key=lambda e: e['job_id'])
 
         if self.export_job_stats is True:
@@ -222,34 +212,29 @@ class Simulator:
                 self.log_file.name, self.alloc_policy, self.preempt_policy, id)
             cluster_util_file = self.log_file.parent / cluster_util_name
             np.save(cluster_util_file, cluster_util)
+
         return num_jobs_done, jct_summary, wait_time_summary
 
     def simulator_go(self, repeat=1, num_jobs=None):
-        """
-        :return: [[num_jobs, avg_jct, wait_time, makespan], [], ... ]
-        """
         result = []
         for repeat_id in range(repeat):
             self.init_go(num_jobs=num_jobs)
-
             while not self.exit_flag:
                 self.tic(self.delta)
-
             num_jobs_done, jct_summary, wait_time_summary = self.exp_summary(repeat_id)
-            result.append((num_jobs_done, jct_summary / num_jobs_done, wait_time_summary / num_jobs_done, self.cur_time))
+            result.append((
+                num_jobs_done,
+                jct_summary / num_jobs_done,
+                wait_time_summary / num_jobs_done,
+                self.cur_time,
+            ))
         return result
 
     def tic(self, delta=1):
         if self.cur_time < self.max_time:
             self.cluster.tic_svc(self.cur_time)
-
-            # Preempt job
             self.scheduler.preempt_job(self.cluster)
-
-            # Allocate job
             self.scheduler.alloc_job(self.cluster)
-
-            # Jobs tic and global cur_time += delta
             tic_return_value = self.cluster.tic_job(delta)
             if tic_return_value >= 0:
                 self.cur_time = tic_return_value
@@ -259,4 +244,5 @@ class Simulator:
         else:
             print_fn("TIMEOUT {} with jobs {}".format(self.cur_time, self.cluster.job_list))
             self.exit_flag = 1
-            raise TimeoutError("TIMEOUT {} with jobs {}".format(self.cur_time, self.cluster.job_list))
+            raise TimeoutError("TIMEOUT {} with jobs {}".format(
+                self.cur_time, self.cluster.job_list))
